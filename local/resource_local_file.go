@@ -82,6 +82,8 @@ func resourceLocalFileUpdate(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
+	os.Chmod(outputPath, os.FileMode(perm32))
+
 	return resourceLocalFileRead(d, m)
 }
 

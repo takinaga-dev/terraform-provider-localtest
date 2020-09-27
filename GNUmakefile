@@ -1,12 +1,19 @@
 TEST?=$$(go list ./... |grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
-WEBSITE_REPO=github.com/hashicorp/terraform-website
-PKG_NAME=local
-
+WEBSITE_REPO=github.com/takinaga-dev/localtest
+PKG_NAME=terraform-provider-localtest
+VERSION=0.1
+OS_ARCH=darwin_amd64
+BINARY=~/src/github.com/terraform-providers/terraform-provider-localtest/build/${PKG_NAME}
 default: build
+
+install: build
+	mkdir -p ~/.terraform.d/plugins/${WEBSITE_REPO}/${VERSION}/${OS_ARCH}
+	cp ${BINARY} ~/.terraform.d/plugins/${WEBSITE_REPO}/${VERSION}/${OS_ARCH}
 
 build: fmtcheck
 	go install
+	go build -o ${BINARY}
 
 test: fmtcheck
 	go test -i $(TEST) || exit 1
