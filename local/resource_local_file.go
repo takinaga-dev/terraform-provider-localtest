@@ -1,9 +1,10 @@
-package local
+package localtest
 
 import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -17,12 +18,12 @@ func resourceLocalFile() *schema.Resource {
 		Create: resourceLocalFileCreate,
 		Read:   resourceLocalFileRead,
 		Delete: resourceLocalFileDelete,
+		Update: resourceLocalFileUpdate,
 
 		Schema: map[string]*schema.Schema{
 			"content": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ForceNew:      true,
 				ConflictsWith: []string{"sensitive_content", "content_base64", "source"},
 			},
 			"sensitive_content": {
@@ -48,7 +49,6 @@ func resourceLocalFile() *schema.Resource {
 				Type:         schema.TypeString,
 				Description:  "Permissions to set for the output file",
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "0777",
 				ValidateFunc: validateMode,
 			},
@@ -71,10 +71,25 @@ func resourceLocalFile() *schema.Resource {
 	}
 }
 
+func resourceLocalFileUpdate(d *schema.ResourceData, m interface{}) error {
+	outputPath := d.Get("filename").(string)
+	filePerm := d.Get("file_permission").(string)
+	content := d.Get("content").(string)
+	perm32, _ := strconv.ParseUint(filePerm, 8, 32)
+
+	err := ioutil.WriteFile(outputPath, []byte(content), os.FileMode(perm32))
+	if err != nil {
+		return nil
+	}
+
+	return resourceLocalFileRead(d, m)
+}
+
 func resourceLocalFileRead(d *schema.ResourceData, _ interface{}) error {
 	// If the output file doesn't exist, mark the resource for creation.
 	outputPath := d.Get("filename").(string)
-	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+	info, err := os.Stat(outputPath)
+	if os.IsNotExist(err) {
 		d.SetId("")
 		return nil
 	}
@@ -87,11 +102,17 @@ func resourceLocalFileRead(d *schema.ResourceData, _ interface{}) error {
 		return err
 	}
 
-	outputChecksum := sha1.Sum([]byte(outputContent))
-	if hex.EncodeToString(outputChecksum[:]) != d.Id() {
+	checksum := sha1.Sum([]byte(outputContent))
+	d.SetId(hex.EncodeToString(checksum[:]))
+	// do not check content
+	/*if hex.EncodeToString(outputChecksum[:]) != d.Id() {
 		d.SetId("")
 		return nil
-	}
+	}*/
+
+	// insert file_permission and content to ResourceData
+	d.Set("file_permission", fmt.Sprintf("%#o", info.Mode()))
+	d.Set("content", string(outputContent))
 
 	return nil
 }

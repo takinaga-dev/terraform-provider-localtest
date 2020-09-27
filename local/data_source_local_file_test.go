@@ -1,4 +1,4 @@
-package local
+package localtest
 
 import (
 	"encoding/base64"

@@ -1,4 +1,4 @@
-package local
+package localtest
 
 import (
 	"errors"
@@ -7,11 +7,12 @@ import (
 	"os"
 	"testing"
 
+	"path"
+	"runtime"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	r "github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"path"
-	"runtime"
 )
 
 func TestLocalFile_Basic(t *testing.T) {

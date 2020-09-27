@@ -1,4 +1,4 @@
-package local
+package localtest
 
 import (
 	"crypto/sha1"
